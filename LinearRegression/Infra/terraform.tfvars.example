@@ -1,0 +1,20 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and update with your values
+
+project_name                    = "mlops-lr"
+environment                     = "dev"
+location                        = "eastus"
+storage_account_tier            = "Standard"
+storage_account_replication_type = "LRS"
+key_vault_sku                   = "standard"
+compute_instance_vm_size        = "Standard_DS2_v2"
+enable_aml_cluster              = true
+cluster_min_nodes               = 0
+cluster_max_nodes               = 2
+
+tags = {
+  Project     = "MLOps Linear Regression"
+  Environment = "dev"
+  ManagedBy   = "Terraform"
+  Owner       = "Data Science Team"
+}
