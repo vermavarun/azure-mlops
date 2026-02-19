@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mlops-pipeline:
+    build: .
+    container_name: mlops-lr-pipeline
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./metrics:/app/metrics
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python app.py
+    # Uncomment below to use Azure ML
+    # command: python app.py --azure
+
+  # Optional: Jupyter notebook server for exploration
+  jupyter:
+    image: python:3.10-slim
+    container_name: mlops-lr-jupyter
+    working_dir: /app
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - ./notebooks:/app/notebooks
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "pip install -q jupyter jupyterlab &&
+             mkdir -p notebooks &&
+             jupyter lab --ip=0.0.0.0 --allow-root --no-browser --NotebookApp.token='' --NotebookApp.password=''"
+    # Access at: http://localhost:8888
+
+# Usage:
+# docker-compose up                 # Run pipeline
+# docker-compose up jupyter         # Run Jupyter only
+# docker-compose down               # Stop all services
+# docker-compose logs -f            # Follow logs
+# docker-compose exec mlops-pipeline bash  # Shell into container

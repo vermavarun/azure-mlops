@@ -1,0 +1,105 @@
+name: MLOps Pipeline CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov black pylint
+    
+    - name: Format check with Black
+      run: black . --check --line-length 100
+      continue-on-error: true
+    
+    - name: Lint with Pylint
+      run: pylint --disable=all --enable=E,F *.py
+      continue-on-error: true
+    
+    - name: Import check
+      run: python -c "import app, config, data_handler, train, evaluate; print('✓ All imports successful')"
+    
+    - name: Test data handler
+      run: python -c "from data_handler import generate_synthetic_data; X, y = generate_synthetic_data(); print(f'✓ Generated {X.shape[0]} samples')"
+    
+    - name: Test training
+      run: python -c "
+        from data_handler import generate_synthetic_data
+        from train import train_model
+        X, y = generate_synthetic_data()
+        model, score = train_model(X, y, model_type='linear')
+        print(f'✓ Model trained with R² = {score:.3f}')
+      "
+    
+    - name: Test evaluation
+      run: python -c "
+        from data_handler import load_data
+        from train import train_model
+        from evaluate import evaluate_model
+        X_train, X_test, y_train, y_test = load_data()
+        model, _ = train_model(X_train, y_train)
+        metrics = evaluate_model(model, X_test, y_test)
+        print(f'✓ Evaluation complete: R² = {metrics[\"r2\"]:.3f}')
+      "
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Azure CLI
+      uses: azure/setup-cli@v0
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run pipeline on Azure ML
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        AZURE_WORKSPACE_NAME: ${{ secrets.AZURE_WORKSPACE_NAME }}
+      run: |
+        echo "Would run: python app.py --azure"
+        echo "This requires setting up AZURE_CREDENTIALS secret in GitHub"
+
+# GitHub Secrets Setup (required for deploy job):
+# 1. Go to: Settings → Secrets and variables → Actions
+# 2. Add: AZURE_CREDENTIALS
+#    Value: Output from: az ad sp create-for-rbac --role contributor --scopes /subscriptions/{SUBSCRIPTION_ID}
+# 3. Add: AZURE_SUBSCRIPTION_ID
+# 4. Add: AZURE_RESOURCE_GROUP
+# 5. Add: AZURE_WORKSPACE_NAME

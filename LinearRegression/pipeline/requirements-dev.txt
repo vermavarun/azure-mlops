@@ -1,0 +1,15 @@
+# Core dependencies (from requirements.txt)
+-r requirements.txt
+
+# Development tools
+black==23.7.0          # Code formatter
+pylint==2.17.5         # Code linter
+pytest==7.4.0          # Testing framework
+pytest-cov==4.1.0      # Coverage plugin
+flake8==6.0.0          # Style guide enforcement
+mypy==1.4.1            # Static type checker
+isort==5.12.0          # Import organizer
+
+# Jupyter (optional)
+jupyter==1.0.0         # Jupyter Lab interface
+ipywidgets==8.0.7      # Interactive widgets

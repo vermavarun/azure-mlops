@@ -1,0 +1,63 @@
+name: Deploy to Azure ML
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Set up Azure CLI
+      uses: azure/setup-cli@v0
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Deploy to ${{ github.event.inputs.environment }}
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        AZURE_WORKSPACE_NAME: ${{ secrets.AZURE_WORKSPACE_NAME }}
+        TARGET_ENV: ${{ github.event.inputs.environment }}
+      run: |
+        echo "Deploying to $TARGET_ENV environment..."
+        python app.py --azure
+    
+    - name: Verify deployment
+      env:
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        AZURE_WORKSPACE_NAME: ${{ secrets.AZURE_WORKSPACE_NAME }}
+      run: |
+        echo "Deployment verification would run here"
+        # Example: List recent pipeline runs
+        # az ml job list --resource-group $AZURE_RESOURCE_GROUP --workspace-name $AZURE_WORKSPACE_NAME --max-results 5
+
+# Usage:
+# 1. Go to: Actions → Deploy to Azure ML → Run workflow
+# 2. Select environment (dev/prod)
+# 3. Click "Run workflow"
