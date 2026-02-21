@@ -2,11 +2,11 @@ name: MLOps Pipeline CI/CD
 
 on:
   push:
-    branches: [ main, develop, local ]
+    branches: [ main, develop, github-actions ]
   pull_request:
-    branches: [ main, develop, local ]
+    branches: [ main, develop, github-actions ]
   workflow_dispatch:
-    
+
 env:
   PYTHON_VERSION: '3.10'
 
