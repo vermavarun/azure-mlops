@@ -18,9 +18,9 @@ def get_config() -> Dict[str, Any]:
     
     config = {
         # Azure ML Configuration
-        'subscription_id': os.getenv('AZURE_SUBSCRIPTION_ID', ''),
-        'resource_group_name': os.getenv('AZURE_RESOURCE_GROUP', 'mlops-lr-dev-rg-da8715cb'),
-        'workspace_name': os.getenv('AZURE_WORKSPACE_NAME', 'mlops-lr-dev-amlws-45636e32'),
+        'subscription_id': os.getenv('AZURE_SUBSCRIPTION_ID', '1f8817ba-4f67-4ce6-9b70-e4b60fd2c3db'),
+        'resource_group_name': os.getenv('AZURE_RESOURCE_GROUP', 'mlops-lr-dev-rg-ab837c05'),
+        'workspace_name': os.getenv('AZURE_WORKSPACE_NAME', 'mlops-lr-dev-amlws-c773a9ba'),
         
         # Compute Resources
         'compute_cluster_name': os.getenv('COMPUTE_CLUSTER', 'mlops-lr-dev-cc'),

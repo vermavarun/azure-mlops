@@ -12,6 +12,7 @@ from azure.identity import DefaultAzureCredential
 from azure.ai.ml import MLClient
 from azure.ai.ml.dsl import pipeline
 from azure.ai.ml import command
+from azure.ai.ml.entities import Environment
 
 from config import get_config
 from data_handler import load_data, prepare_data
@@ -98,25 +99,33 @@ def run_azure_ml_pipeline():
     
     ml_client = get_ml_client()
     
+    # Create a custom environment with conda dependencies
+    env = Environment(
+        name="linear-regression-env",
+        description="Environment for linear regression pipeline",
+        conda_file="conda.yml",
+        image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04"
+    )
+    
     # Define component commands
     prepare_data_cmd = command(
-        code="./src",
+        code=".",
         command="python data_handler.py",
-        environment="AzureML-sklearn-1.0",
+        environment=env,
         compute=config['compute_cluster_name'],
     )
     
     train_model_cmd = command(
-        code="./src",
+        code=".",
         command="python train.py",
-        environment="AzureML-sklearn-1.0",
+        environment=env,
         compute=config['compute_cluster_name'],
     )
     
     evaluate_model_cmd = command(
-        code="./src",
+        code=".",
         command="python evaluate.py",
-        environment="AzureML-sklearn-1.0",
+        environment=env,
         compute=config['compute_cluster_name'],
     )
     
@@ -132,9 +141,7 @@ def run_azure_ml_pipeline():
         train_job = train_model_cmd()
         eval_job = evaluate_model_cmd()
         
-        return {
-            "predictions": eval_job.outputs.predictions
-        }
+        return {}
     
     # Create pipeline
     pipeline_job = linear_regression_pipeline()

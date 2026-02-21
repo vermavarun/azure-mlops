@@ -33,8 +33,8 @@ Create a `.env` file in the pipeline directory:
 
 ```bash
 AZURE_SUBSCRIPTION_ID=your_subscription_id
-AZURE_RESOURCE_GROUP=mlops-lr-dev-rg-da8715cb
-AZURE_WORKSPACE_NAME=mlops-lr-dev-amlws-45636e32
+AZURE_RESOURCE_GROUP=mlops-lr-dev-rg-ab837c05
+AZURE_WORKSPACE_NAME=mlops-lr-dev-amlws-c773a9ba
 COMPUTE_CLUSTER=mlops-lr-dev-cc
 COMPUTE_INSTANCE=mlops-lr-dev-ci
 TEST_SIZE=0.2
