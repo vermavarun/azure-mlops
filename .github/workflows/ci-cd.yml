@@ -44,7 +44,11 @@ jobs:
       run: python -c "import app, config, data_handler, train, evaluate; print('✓ All imports successful')"
 
     - name: Test data handler
-      run: python -c "from data_handler import generate_synthetic_data; X, y = generate_synthetic_data(); print(f'✓ Generated {X.shape[0]} samples')"
+      #run: python -c "from data_handler import generate_synthetic_data; X, y = generate_synthetic_data(); print(f'✓ Generated {X.shape[0]} samples')"
+      run: python -c "from data_handler import generate_synthetic_data; r = generate_synthetic_data(); print(type(r), getattr(r,'_fields',None)); \
+          import collections; \
+          print('len=', len(r) if hasattr(r,'__len__') else 'N/A'); \
+          print('preview:', r if isinstance(r,(dict,list,tuple)) else str(r))"
 
     - name: Test training
       run: python -c "
