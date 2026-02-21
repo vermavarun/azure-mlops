@@ -5,7 +5,8 @@ on:
     branches: [ main, develop, local ]
   pull_request:
     branches: [ main, develop, local ]
-
+  workflow_dispatch:
+    
 env:
   PYTHON_VERSION: '3.10'
 
