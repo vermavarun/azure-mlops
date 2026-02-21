@@ -1,5 +1,5 @@
-azure-ai-ml==1.10.0
-azure-identity==1.13.0
+azure-ai-ml==1.31.0
+azure-identity==1.25.2
 scikit-learn==1.5.2
 pandas==2.2.3
 numpy==1.26.4

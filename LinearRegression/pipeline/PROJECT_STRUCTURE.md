@@ -236,8 +236,8 @@ Extends requirements.txt with:
 ### **.env.example** - Environment Template
 ```
 AZURE_SUBSCRIPTION_ID=1f8817ba-4f67-4ce6-9b70-e4b60fd2c3db
-AZURE_WORKSPACE_NAME=mlops-lr-dev-amlws-45636e32
-AZURE_RESOURCE_GROUP=mlops-lr-dev-rg-da8715cb
+AZURE_WORKSPACE_NAME=mlops-lr-dev-amlws-c773a9ba
+AZURE_RESOURCE_GROUP=mlops-lr-dev-rg-ab837c05
 ...
 ```
 

@@ -2,9 +2,9 @@ name: MLOps Pipeline CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, local ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, local ]
 
 env:
   PYTHON_VERSION: '3.10'
@@ -12,81 +12,81 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
+
+    defaults:
+      run:
+        working-directory: ./LinearRegression/pipeline
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-cov black pylint
-    
+
     - name: Format check with Black
       run: black . --check --line-length 100
       continue-on-error: true
-    
+
     - name: Lint with Pylint
       run: pylint --disable=all --enable=E,F *.py
       continue-on-error: true
-    
+
     - name: Import check
       run: python -c "import app, config, data_handler, train, evaluate; print('✓ All imports successful')"
-    
+
     - name: Test data handler
-      run: python -c "from data_handler import generate_synthetic_data; X, y = generate_synthetic_data(); print(f'✓ Generated {X.shape[0]} samples')"
-    
+      run: >
+        python -c "from data_handler import generate_synthetic_data; df = generate_synthetic_data();
+        import sys; assert 'target' in df.columns, 'Expected target column'; X=df.drop(columns=['target']); y=df['target'];
+        print(f'✓ Generated {len(df)} samples, {X.shape[1]} features; y shape={y.shape}')"
+
     - name: Test training
-      run: python -c "
-        from data_handler import generate_synthetic_data
-        from train import train_model
-        X, y = generate_synthetic_data()
-        model, score = train_model(X, y, model_type='linear')
-        print(f'✓ Model trained with R² = {score:.3f}')
-      "
-    
+      run: >
+        python -c "from data_handler import generate_synthetic_data; from train import train_model;
+        df = generate_synthetic_data(); X = df.drop(columns=['target']).values; y = df['target'].values;
+        model, score = train_model(X, y, model_type='linear'); print(f'✓ Model trained with R² = {score:.3f}')"
+
     - name: Test evaluation
-      run: python -c "
-        from data_handler import load_data
-        from train import train_model
-        from evaluate import evaluate_model
-        X_train, X_test, y_train, y_test = load_data()
-        model, _ = train_model(X_train, y_train)
-        metrics = evaluate_model(model, X_test, y_test)
-        print(f'✓ Evaluation complete: R² = {metrics[\"r2\"]:.3f}')
-      "
+      run: >
+        python -c "from data_handler import load_data; from train import train_model; from evaluate import evaluate_model;
+        X_train, X_test, y_train, y_test = load_data(); model, _ = train_model(X_train, y_train);
+        metrics = evaluate_model(model, X_test, y_test); print(f'✓ Evaluation complete: R² = {metrics['r2']:.3f}')"
 
   deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Azure CLI
       uses: azure/setup-cli@v0
-    
+
     - name: Azure Login
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
+
     - name: Run pipeline on Azure ML
       env:
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
