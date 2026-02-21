@@ -44,36 +44,22 @@ jobs:
       run: python -c "import app, config, data_handler, train, evaluate; print('✓ All imports successful')"
 
     - name: Test data handler
-      #run: python -c "from data_handler import generate_synthetic_data; X, y = generate_synthetic_data(); print(f'✓ Generated {X.shape[0]} samples')"
       run: >
-        python -c "from data_handler import generate_synthetic_data;
-        r = generate_synthetic_data();
-        print(type(r), getattr(r,'_fields',None));
-        import collections;
-        print('len=', len(r) if hasattr(r,'__len__') else 'N/A');
-        print('preview:', r if isinstance(r,(dict,list,tuple)) else str(r))"
+        python -c "from data_handler import generate_synthetic_data; df = generate_synthetic_data();
+        import sys; assert 'target' in df.columns, 'Expected target column'; X=df.drop(columns=['target']); y=df['target'];
+        print(f'✓ Generated {len(df)} samples, {X.shape[1]} features; y shape={y.shape}')"
 
     - name: Test training
-      run: python -c "
-        from data_handler import generate_synthetic_data
-        from train import train_model
-        X, y = generate_synthetic_data()
-        model, score = train_model(X, y, model_type='linear')
-        print(f'✓ Model trained with R² = {score:.3f}')
-        "
-
+      run: >
+        python -c "from data_handler import generate_synthetic_data; from train import train_model;
+        df = generate_synthetic_data(); X = df.drop(columns=['target']).values; y = df['target'].values;
+        model, score = train_model(X, y, model_type='linear'); print(f'✓ Model trained with R² = {score:.3f}')"
 
     - name: Test evaluation
-      run: |
-        python -c "
-        from data_handler import load_data
-        from train import train_model
-        from evaluate import evaluate_model
-        X_train, X_test, y_train, y_test = load_data()
-        model, _ = train_model(X_train, y_train)
-        metrics = evaluate_model(model, X_test, y_test)
-        print(f'✓ Evaluation complete: R² = {metrics[\"r2\"]:.3f}')
-        "
+      run: >
+        python -c "from data_handler import load_data; from train import train_model; from evaluate import evaluate_model;
+        X_train, X_test, y_train, y_test = load_data(); model, _ = train_model(X_train, y_train);
+        metrics = evaluate_model(model, X_test, y_test); print(f'✓ Evaluation complete: R² = {metrics['r2']:.3f}')"
 
   deploy:
     needs: test
