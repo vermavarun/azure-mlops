@@ -8,11 +8,13 @@ import json
 import numpy as np
 import joblib
 import logging
-from typing import List, Dict, Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Global model variable
+model = None
 
 
 def init():
@@ -25,63 +27,75 @@ def init():
     try:
         # Get the model path from environment variable
         model_path = os.getenv('AZUREML_MODEL_DIR', './models')
+        
+        logger.info(f"AZUREML_MODEL_DIR: {model_path}")
+        logger.info(f"Model directory exists: {os.path.exists(model_path)}")
 
-        # Find the model file
-        import glob
-        model_files = glob.glob(os.path.join(model_path, '**/*.pkl'), recursive=True)
+        # List contents of model directory
+        if os.path.exists(model_path):
+            logger.info(f"Contents of {model_path}: {os.listdir(model_path)}")
+        
+        # Find and load the model file
+        model_file = None
+        
+        # First try to find .pkl files
+        for file in os.listdir(model_path):
+            if file.endswith('.pkl'):
+                model_file = os.path.join(model_path, file)
+                logger.info(f"Found .pkl file: {model_file}")
+                break
+        
+        # If no .pkl, try .joblib
+        if not model_file:
+            for file in os.listdir(model_path):
+                if file.endswith('.joblib'):
+                    model_file = os.path.join(model_path, file)
+                    logger.info(f"Found .joblib file: {model_file}")
+                    break
+        
+        if not model_file:
+            raise FileNotFoundError(f"No model file found in {model_path}")
 
-        if not model_files:
-            model_files = glob.glob(os.path.join(model_path, '**/*.joblib'), recursive=True)
-
-        if not model_files:
-            raise FileNotFoundError(f"No model files found in {model_path}")
-
-        # Load the first model found (or you can specify which one)
-        model_file = model_files[0]
         logger.info(f"Loading model from: {model_file}")
-
         model = joblib.load(model_file)
         logger.info("Model loaded successfully")
 
         # Log model information
         if hasattr(model, 'coef_'):
             logger.info(f"Model coefficients shape: {model.coef_.shape}")
+        if hasattr(model, 'intercept_'):
             logger.info(f"Model intercept: {model.intercept_:.4f}")
 
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}", exc_info=True)
-        raise
+        raise Exception(f"Failed to load model: {str(e)}")
 
 
-def run(raw_data: str) -> str:
+def run(raw_data):
     """
     Make predictions on input data.
 
     Args:
-        raw_data: JSON string containing input data
+        raw_data: JSON string or bytes containing input data
 
     Returns:
         JSON string with predictions
 
-    Expected input format:
-        {
-            "data": [[feature_0, feature_1, ..., feature_9], [...]],
-            "metadata": {...}  # optional
-        }
-
-    Or simplified format:
-        {
-            "features": [[feature_0, feature_1, ..., feature_9], [...]]
-        }
-
-    Or just an array:
+    Expected input formats:
+        {"data": [[feature_0, feature_1, ..., feature_9], [...]]}
+        {"features": [[feature_0, feature_1, ..., feature_9], [...]]}
         [[feature_0, feature_1, ..., feature_9], [...]]
     """
     try:
         logger.info(f"Received request")
-
+        
+        # Handle both string and bytes input
+        if isinstance(raw_data, bytes):
+            raw_data = raw_data.decode('utf-8')
+        
         # Parse input data
         input_data = json.loads(raw_data)
+        logger.info(f"Input data type: {type(input_data)}")
 
         # Handle different input formats
         if isinstance(input_data, dict):
@@ -95,37 +109,34 @@ def run(raw_data: str) -> str:
         elif isinstance(input_data, list):
             features = input_data
         else:
-            raise ValueError("Unsupported input format. Expected dict or list.")
+            raise ValueError(f"Unsupported input format: {type(input_data)}")
 
         # Convert to numpy array
-        X = np.array(features)
+        X = np.asarray(features, dtype=np.float64)
         logger.info(f"Input shape: {X.shape}")
 
         # Make predictions
         predictions = model.predict(X)
-        logger.info(f"Generated {len(predictions)} prediction(s)")
+        logger.info(f"Predictions: {predictions}")
 
-        # Prepare response
-        response = {
-            'predictions': predictions.tolist(),
-            'model_type': type(model).__name__,
-            'num_samples': len(predictions)
-        }
-
-        # Add model metadata if available
-        if hasattr(model, 'coef_'):
-            response['model_info'] = {
-                'num_features': len(model.coef_),
-                'has_intercept': model.fit_intercept
+        # Format output
+        if len(predictions) == 1:
+            output = {
+                "predictions": float(predictions[0])
+            }
+        else:
+            output = {
+                "predictions": predictions.tolist()
             }
 
-        return json.dumps(response)
+        return json.dumps(output)
 
     except Exception as e:
-        error_response = {
-            'error': str(e),
-            'error_type': type(e).__name__
-        }
+        logger.error(f"Error during prediction: {str(e)}", exc_info=True)
+        return json.dumps({
+            "error": str(e),
+            "predictions": None
+        })
         logger.error(f"Prediction error: {str(e)}", exc_info=True)
         return json.dumps(error_response)
 

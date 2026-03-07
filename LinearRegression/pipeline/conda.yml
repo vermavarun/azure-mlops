@@ -1,17 +1,14 @@
 name: linear-regression-env
 channels:
-  - conda-forge
   - defaults
 dependencies:
   - python=3.11
+  - scikit-learn
+  - numpy
+  - pandas
+  - scipy
+  - joblib
   - pip
   - pip:
-    - azure-ai-ml==1.31.0
-    - azure-identity==1.25.2
-    - scikit-learn==1.5.2
-    - pandas==2.2.3
-    - numpy==1.26.4
-    - matplotlib==3.9.3
-    - scipy==1.14.1
-    - joblib==1.4.2
-    - python-dotenv==1.0.0
+    - azureml-inference-server-http
+    - python-dotenv

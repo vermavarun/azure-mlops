@@ -15,9 +15,10 @@ from azure.ai.ml.entities import (
     ManagedOnlineDeployment,
     Model,
     Environment,
-    CodeConfiguration
+    CodeConfiguration,
+    OnlineRequestSettings
 )
-from azure.identity import DefaultAzureCredential
+from azure.identity import InteractiveBrowserCredential
 from azure.core.exceptions import ResourceExistsError
 
 from config import get_config
@@ -34,7 +35,8 @@ def get_ml_client():
     """Initialize Azure ML Client"""
     config = get_config()
 
-    credential = DefaultAzureCredential()
+    # Use InteractiveBrowserCredential to handle MFA properly for all operations
+    credential = InteractiveBrowserCredential()
     ml_client = MLClient(
         credential=credential,
         subscription_id=config['subscription_id'],
@@ -169,8 +171,8 @@ def create_deployment(
     env = Environment(
         name="linear-regression-serving-env",
         description="Environment for serving Linear Regression model",
-        conda_file="conda.yml",
-        image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04"
+        image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04",
+        conda_file="conda.yml"
     )
 
     # Create deployment
@@ -185,11 +187,11 @@ def create_deployment(
         ),
         instance_type="Standard_DS2_v2",
         instance_count=1,
-        request_settings={
-            "request_timeout_ms": 30000,
-            "max_concurrent_requests_per_instance": 1,
-            "max_queue_wait_ms": 60000
-        }
+        request_settings=OnlineRequestSettings(
+            request_timeout_ms=120000,
+            max_concurrent_requests_per_instance=1,
+            max_queue_wait_ms=240000
+        )
     )
 
     logger.info("Starting deployment (this may take 10-15 minutes)...")
