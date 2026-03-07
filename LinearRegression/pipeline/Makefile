@@ -1,23 +1,28 @@
-.PHONY: help setup install install-dev local azure demo infer infer-csv infer-interactive infer-examples clean format lint test
+.PHONY: help setup install install-dev local azure demo deploy-azure test-azure infer-azure azure-workflow clean format lint test
 
 help:
 	@echo "MLOps Pipeline - Available Commands"
 	@echo "===================================="
 	@echo ""
-	@echo "make setup             - Initialize environment"
-	@echo "make install           - Install dependencies"
-	@echo "make install-dev       - Install dev dependencies"
-	@echo "make local             - Run pipeline locally"
-	@echo "make azure             - Run pipeline on Azure ML"
-	@echo "make demo              - Run demo script"
-	@echo "make infer             - Run inference (interactive mode)"
-	@echo "make infer-csv         - Run inference on CSV file"
-	@echo "make infer-interactive - Run inference in interactive mode"
-	@echo "make infer-examples    - Run inference usage examples"
-	@echo "make clean             - Clean output files"
-	@echo "make format            - Format code with Black"
-	@echo "make lint              - Lint code with Pylint"
-	@echo "make test              - Run tests"
+	@echo "Training & Pipeline:"
+	@echo "  make setup        - Initialize environment"
+	@echo "  make install      - Install dependencies"
+	@echo "  make install-dev  - Install dev dependencies"
+	@echo "  make local        - Run pipeline locally"
+	@echo "  make azure        - Run pipeline on Azure ML"
+	@echo "  make demo         - Run demo script"
+	@echo ""
+	@echo "Azure Deployment & Inference:"
+	@echo "  make deploy-azure - Deploy model to Azure ML endpoint"
+	@echo "  make test-azure   - Test deployed Azure endpoint"
+	@echo "  make infer-azure  - Run inference with Azure endpoint"
+	@echo "  make azure-workflow - Run Azure workflow examples"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  make clean        - Clean output files"
+	@echo "  make format       - Format code with Black"
+	@echo "  make lint         - Lint code with Pylint"
+	@echo "  make test         - Run tests"
 	@echo ""
 
 setup:
@@ -49,26 +54,28 @@ demo:
 	@echo "Running demo script..."
 	python demo.py
 
-infer:
-	@echo "Running inference in interactive mode..."
-	python inference.py --interactive
+deploy-azure:
+	@echo "Deploying model to Azure ML endpoint..."
+	@echo "This will take 10-15 minutes..."
+	python deploy_azure.py
 
-infer-csv:
-	@echo "Running inference on CSV file..."
-	@if [ -z "$(CSV)" ]; then \
-		echo "Error: Please specify CSV file with CSV=<path>"; \
-		echo "Example: make infer-csv CSV=data/test.csv"; \
-		exit 1; \
+test-azure:
+	@echo "Testing Azure ML endpoint..."
+	python inference_azure.py --test
+
+infer-azure:
+	@echo "Running Azure ML inference..."
+	@if [ -n "$(CSV)" ]; then \
+		python inference_azure.py --csv $(CSV) $(if $(OUTPUT),--output $(OUTPUT),); \
+	elif [ -n "$(FEATURES)" ]; then \
+		python inference_azure.py --features $(FEATURES); \
+	else \
+		python inference_azure.py --interactive; \
 	fi
-	python inference.py --csv $(CSV) $(if $(OUTPUT),--output $(OUTPUT),)
 
-infer-interactive:
-	@echo "Running inference in interactive mode..."
-	python inference.py --interactive
-
-infer-examples:
-	@echo "Running inference examples..."
-	python inference_examples.py
+azure-workflow:
+	@echo "Running Azure workflow examples..."
+	python azure_workflow_examples.py --skip-deploy
 
 clean:
 	@echo "Cleaning output files..."
